@@ -3,6 +3,7 @@ import time, random, threading
 
 class ParseMD:
     DELIMITER = "\n"
+    indent = 4
 
     def __init__(self):
         self.title = "test parse"  # input("What is the title of your document?")
@@ -48,20 +49,26 @@ class ParseMD:
     def parse(self):
         md = self.read_file(self.input_filename)
         while len(md) > 0:
+
             start = 0
             line = ""
+
             if md[start] == '#':
                 level = self.check_heading_level(md, start)
+
                 if level < 7:
                     line = self.build_line(md, start, "h"+str(level))
                 else:
                     # Heading 7 doesn't exist, need to handle this as paragraph text.
                     print("Heading 7 doesn't exist")
 
+            elif md[start:start+2] == '* ':
+                line = self.build_list(md)
+
             else:
                 line = self.build_line(md, start, "p")
 
-            md = md.replace(line, "")
+            md = md.replace(line, "", 1)
 
     def add_html_wrapper(self):
         start = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<title>{}</title>\n</head>\n<body>\n'.format(self.title)
@@ -71,6 +78,20 @@ class ParseMD:
         self.write_file(self.output_filename, body, 'w')
         print("{} successfully parsed from MD into HTML".format(self.title))
 
+    def build_list(self, markdown):
+        bullets = []
+        time.sleep(1)
+
+        while markdown[0:2] == '* ':
+            line_break = markdown.index("\n")+1
+            line = markdown[0: line_break]
+            bullets.append(line)
+            markdown = markdown.replace(line, "")
+
+        content = Conversions.ul(bullets, self.indent)
+        self.write_file(self.output_filename, content)
+        return "".join(bullets)
+
     def build_line(self, markdown, end, element):
         raw_line = ""
 
@@ -78,24 +99,30 @@ class ParseMD:
             raw_line += markdown[end]
             end += 1
 
-        line = raw_line.strip()
+        #print(raw_line)
+        #time.sleep(1)
 
-        if element[0] == "h":
-            content = Conversions.heading(line.replace("#", "", int(element[1])).strip(), element[1])
-
-        elif element == "p":
-            content = Conversions.p(line)
-
+        if raw_line == "":
+            return "\n"
         else:
-            print("Unrecognised Element")
+            line = raw_line.strip()
 
-        self.write_file(self.output_filename, content)
+            if element[0] == "h":
+                content = self.indent * " " + Conversions.heading(line.replace("#", "", int(element[1])).strip(), element[1])
 
-        try:
-            if markdown[end] == "\n":
-                return raw_line + "\n"
-        except IndexError:
-            return raw_line
+            elif element == "p":
+                content = self.indent * " " + Conversions.p(line)
+
+            else:
+                print("Unrecognised Element")
+
+            self.write_file(self.output_filename, content)
+
+            try:
+                if markdown[end] == "\n":
+                    return raw_line + "\n"
+            except IndexError:
+                return raw_line
 
     def run(self):
         self.check_file_exists(self.output_filename)
@@ -107,13 +134,23 @@ class Conversions:
 
     @staticmethod
     def heading(text, level):
-        html = "<h{} class='' id=''>{}</h{}>\n".format(level, text, level)
+        html = "<h{} class='' id=''>{}</h{}>\n\n".format(level, text, level)
         return html
 
+    @staticmethod
+    def ul(bullets, indent):
+        indent = indent * " "
+        ul = indent + "<ul>\n"
+        for li in bullets:
+            li = li.replace("\n", "")
+            li = li.replace("* ", "")
+            ul += indent * 2 + "<li>{}</li>\n".format(li)
+        ul += indent + "</ul>\n\n"
+        return ul
 
     @staticmethod
     def p(text):
-        html = "<p>"+text+"</p>\n"
+        html = "<p>"+text+"</p>\n\n"
         return html
 
 
