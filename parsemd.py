@@ -24,14 +24,6 @@ class ParseMD:
     def parse_line(line):
         print(line)
 
-    def add_html_wrapper(self):
-        start = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<title>{}</title>\n</head>\n<body>\n'.format(self.title)
-        end = '\n</body>\n</html>'
-        body = self.read_file(self.output_filename)
-        body = start + body + end
-        self.write_file(self.output_filename, body, 'w')
-        print("{} successfully parsed from MD into HTML".format(self.title))
-
     @staticmethod
     def check_file_exists(filename):
         try:
@@ -43,6 +35,15 @@ class ParseMD:
         finally:
             with open(filename, 'w') as file:
                 file.write("")
+
+    @staticmethod
+    def check_heading_level(arr, i):
+        level = 0
+
+        while arr[i] == '#':
+            level += 1
+            i += 1
+        return level
 
     def parse(self):
         md = self.read_file(self.input_filename)
@@ -62,14 +63,13 @@ class ParseMD:
 
             md = md.replace(line, "")
 
-    @staticmethod
-    def check_heading_level(arr, i):
-        level = 0
-
-        while arr[i] == '#':
-            level += 1
-            i += 1
-        return level
+    def add_html_wrapper(self):
+        start = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="UTF-8">\n<title>{}</title>\n</head>\n<body>\n'.format(self.title)
+        end = '\n</body>\n</html>'
+        body = self.read_file(self.output_filename)
+        body = start + body + end
+        self.write_file(self.output_filename, body, 'w')
+        print("{} successfully parsed from MD into HTML".format(self.title))
 
     def build_line(self, markdown, end, element):
         raw_line = ""
